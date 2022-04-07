@@ -48,42 +48,85 @@ public class AVL<T extends Comparable<T>> {
         return node;
     }
 
-    private Node<T> rotateRight(Node<T> x) {
-        Node<T> y = x.left;
-        x.left = y.right;
-        y.right = x;
-
-        updateHeight(x);
-        updateHeight(y);
-        return y;
-    }
-
-    private Node<T> rotateLeft(Node<T> x) {
-        Node<T> y = x.right;
-        x.right = y.left;
-        y.left = x;
-
-        updateHeight(x);
-        updateHeight(y);
-        return y;
-    }
-
     private Node<T> balance(Node<T> node) {
-        int deBalance = height(node.left) - height(node.right);
-        if (deBalance > 1){
-            int childDeBalance = height(node.left.left) - height(node.left.right);
+        int deBalance = checkBalance(node);
+        if (deBalance > 1) {
+            int childDeBalance = checkBalance(node.left);
             if (childDeBalance < 0) {
-                node.left = rotateRight(node.left);
+                node.left = rotateLeft(node.left);
             }
             node = rotateRight(node);
-        } else if (deBalance < -1){
-            int childDeBalance = height(node.right.left) - height(node.right.right);
+        } else if (deBalance < -1) {
+            int childDeBalance = checkBalance(node.right);
             if (childDeBalance > 0) {
                 node.right = rotateRight(node.right);
             }
             node = rotateLeft(node);
         }
         return node;
+    }
+
+    private int checkBalance(Node<T> node) {
+        return height(node.left) - height(node.right);
+    }
+
+    /**
+     * 8              6
+     * /              / \
+     * 6       ->    4    8
+     * /
+     * 4
+     */
+    private Node<T> rotateRight(Node<T> node) {
+        Node<T> temp = node.left;
+        node.left = temp.right;
+        temp.right = node;
+
+        updateHeight(node);
+        updateHeight(temp);
+        return temp;
+    }
+
+    /**
+     * 4            6
+     * \          / \
+     * 6   ->   4   8
+     * \
+     * 8
+     */
+    private Node<T> rotateLeft(Node<T> node) {
+        Node<T> temp = node.right;
+        node.right = temp.left;
+        temp.left = node;
+
+        updateHeight(node);
+        updateHeight(temp);
+        return temp;
+    }
+
+    /**
+     * 8                8  right ->   6
+     * /                /             / \
+     * 4     left ->    6             4   8
+     * \             /
+     * 6           4
+     */
+
+    private Node<T> rotateLeftRight(Node<T> node) {
+        node.left = rotateLeft(node.left);
+        return rotateRightLeft(node);
+    }
+
+    /**
+     * 4                4     left ->   6
+     * \                \             / \
+     * 8   right ->     6           4   8
+     * /                  \
+     * 6                    8
+     */
+    private Node<T> rotateRightLeft(Node<T> node) {
+        node.right = rotateRight(node.right);
+        return rotateLeft(node);
     }
 
     private Node<T> search(Node<T> node, T item) {
