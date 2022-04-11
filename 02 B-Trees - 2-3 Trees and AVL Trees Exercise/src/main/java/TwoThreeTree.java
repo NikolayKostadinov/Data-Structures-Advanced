@@ -1,8 +1,3 @@
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 public class TwoThreeTree<K extends Comparable<K>> {
     private TreeNode<K> root;
 
@@ -17,109 +12,94 @@ public class TwoThreeTree<K extends Comparable<K>> {
     }
 
     private TreeNode<K> insert(TreeNode<K> node, K key) {
-
         if (node.isLeaf()) {
-            if (node.isTwoNode()) {
-                if (less(node.leftKey, key)) {
-                    node.rightKey = key;
-                } else if (greater(node.leftKey, key)) {
-                    node.rightKey = node.leftKey;
-                    node.leftKey = key;
-                }
-                return null;
-            } else {
-                List<K> keys = Stream.of(node.leftKey, node.rightKey, key)
-                        .collect(Collectors.toList());
-                Collections.sort(keys);
-                return new TreeNode<>(keys.get(1), keys.get(0), keys.get(2));
-            }
+            return processLeave(node, key);
         }
 
         TreeNode<K> toFix;
 
-        if (node.isTwoNode()) {
-            if (greater(node.leftKey, key)) {
-                toFix = insert(node.leftChild, key);
-            } else {
-                toFix = insert(node.rightChild, key);
-            }
+        // Navigate to bottom
+        if (node.leftKey.compareTo(key) > 0) {
+            toFix = insert(node.leftChild, key);
+        } else if (node.isTwoNode() && node.leftKey.compareTo(key) < 0) {
+            toFix = insert(node.rightChild, key);
+        } else if (node.isThreeNode() && node.rightKey.compareTo(key) < 0) {
+            toFix = insert(node.rightChild, key);
         } else {
-            if (greater(node.leftKey, key)) {
-                toFix = insert(node.leftChild, key);
-            } else if (less(node.rightKey, key)) {
-                toFix = insert(node.rightChild, key);
-            } else {
-                toFix = insert(node.middleChild, key);
-            }
+            toFix = insert(node.middleChild, key);
         }
 
         if (toFix == null) return null;
 
+        return fixNode(node, toFix);
+    }
 
+    private TreeNode<K> processLeave(TreeNode<K> node, K key) {
         if (node.isTwoNode()) {
-            if (less(toFix.leftKey, node.leftKey)) {
+            if (node.leftKey.compareTo(key) < 0) {
+                node.rightKey = key;
+            } else {
+                node.rightKey = node.leftKey;
+                node.leftKey = key;
+            }
+
+            return null;
+        }
+
+        K left = node.leftKey;
+        K middle = key;
+        K right = node.rightKey;
+
+        if (key.compareTo(node.leftKey) < 0) {
+            left = key;
+            middle = node.leftKey;
+        } else if (key.compareTo(node.rightKey) > 0) {
+            middle = node.rightKey;
+            right = key;
+        }
+
+        return new TreeNode<>(middle, left, right);
+    }
+
+    private TreeNode<K> fixNode(TreeNode<K> node, TreeNode<K> toFix) {
+        if (node.isTwoNode()){
+            if (toFix.leftKey.compareTo(node.leftKey) < 0){
                 node.rightKey = node.leftKey;
                 node.leftKey = toFix.leftKey;
 
                 node.leftChild = toFix.leftChild;
                 node.middleChild = toFix.rightChild;
             } else {
-
                 node.rightKey = toFix.leftKey;
 
                 node.middleChild = toFix.leftChild;
                 node.rightChild = toFix.rightChild;
             }
+
             return null;
+        }
+
+        K promoteValue;
+        TreeNode<K> left;
+        TreeNode<K> right;
+
+        if (toFix.leftKey.compareTo(node.leftKey) < 0){
+            promoteValue = node.leftKey;
+            left = toFix;
+            right= new TreeNode<>(node.rightKey, node.middleChild, node.leftChild);
+        } else if (toFix.leftKey.compareTo(node.rightKey) > 0){
+            promoteValue = node.rightKey;
+            left = new TreeNode<>(node.leftKey, node.leftChild, node.middleChild);
+            right = toFix;
         } else {
-            K promoteValue;
-            TreeNode<K> left;
-            TreeNode<K> right;
-            if (less(toFix.leftKey, node.leftKey)) {
-                left = toFix;
-                promoteValue = node.leftKey;
-                right = new TreeNode<K>(node.rightKey, node.middleChild, node.rightChild);
-            } else if (greater(toFix.leftKey, node.rightKey)) {
-                left = new TreeNode<>(node.leftKey, node.leftChild, node.middleChild);
-                promoteValue = node.rightKey;
-                right = toFix;
-            } else {
-                left = new TreeNode<>(node.leftKey, node.leftChild, toFix.leftChild);
-                promoteValue = toFix.leftKey;
-                right = new TreeNode<>(node.rightKey, toFix.rightChild, node.rightChild);
-            }
-
-            return new TreeNode<>(promoteValue, left, right);
-        }
-    }
-
-    private boolean less(K first, K second) {
-        return first.compareTo(second) < 0;
-    }
-
-    private boolean greater(K first, K second) {
-        return first.compareTo(second) > 0;
-    }
-
-    private TreeNode<K> processLeaf(TreeNode<K> node, K key) {
-        if (node.isTwoNode()) {
-            insertIntoTwoNode(node, key);
-            return null;
+            promoteValue = toFix.leftKey;
+            left = new TreeNode<>(node.leftKey, node.leftChild, toFix.leftChild);
+            right = new TreeNode<>(node.rightKey, toFix.rightChild, node.rightChild);
         }
 
-        return insertIntoTreeNode(node, key);
+        return new TreeNode<>(promoteValue, left, right);
     }
 
-    private void insertIntoTwoNode(TreeNode<K> node, K key) {
-
-    }
-
-    private TreeNode<K> insertIntoTreeNode(TreeNode<K> node, K key) {
-        List<K> keys = Stream.of(node.leftKey, node.rightKey, key)
-                .collect(Collectors.toList());
-        Collections.sort(keys);
-        return new TreeNode<>(keys.get(1), keys.get(0), keys.get(2));
-    }
 
     public String getAsString() {
         StringBuilder out = new StringBuilder();
