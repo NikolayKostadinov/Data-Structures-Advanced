@@ -158,7 +158,7 @@ public class AVL<T extends Comparable<T>> {
         } else if (balance > 1) {
             int childBalance = this.balanceFactor(node.left);
             if (childBalance < 0) {
-                node.left = this.rotateRight(node.left);
+                node.left = this.rotateLeft(node.left);
             }
             return this.rotateRight(node);
         }

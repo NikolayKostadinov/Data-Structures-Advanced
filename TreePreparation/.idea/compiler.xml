@@ -6,8 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="Data-Structures-Advanced-B-2-3-AVL-Trees" />
-        <module name="01 B-Trees - 2-3 Trees and AVL Trees" />
+        <module name="TreePreparation" />
       </profile>
     </annotationProcessing>
   </component>

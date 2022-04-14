@@ -2,99 +2,82 @@ public class TwoThreeTree<K extends Comparable<K>> {
     private TreeNode<K> root;
 
     public void insert(K key) {
+        TreeNode<K> newNode = new TreeNode<>(key);
         if (this.root == null) {
-            this.root = new TreeNode<>(key);
+            this.root = newNode;
             return;
         }
 
-        TreeNode<K> newRoot = this.insert(this.root, key);
+        TreeNode<K> newRoot = this.insert(this.root, newNode);
         if (newRoot != null) this.root = newRoot;
     }
 
-    private TreeNode<K> insert(TreeNode<K> node, K key) {
+    private TreeNode<K> insert(TreeNode<K> node, TreeNode<K> newNode) {
         if (node.isLeaf()) {
-            return processLeave(node, key);
+            return insertIntoNode(node, newNode);
         }
 
-        TreeNode<K> toFix;
-
-        // Navigate to bottom
-        if (node.leftKey.compareTo(key) > 0) {
-            toFix = insert(node.leftChild, key);
-        } else if (node.isTwoNode() && node.leftKey.compareTo(key) < 0) {
-            toFix = insert(node.rightChild, key);
-        } else if (node.isThreeNode() && node.rightKey.compareTo(key) < 0) {
-            toFix = insert(node.rightChild, key);
-        } else {
-            toFix = insert(node.middleChild, key);
-        }
-
-        if (toFix == null) return null;
-
-        return fixNode(node, toFix);
+        TreeNode<K> nodeToInsert = navigateToLeave(node, newNode);
+        return insertIntoNode(node, nodeToInsert);
     }
 
-    private TreeNode<K> processLeave(TreeNode<K> node, K key) {
+    private TreeNode<K> insertIntoNode(TreeNode<K> node, TreeNode<K> newNode) {
+        if (newNode == null) return null;
+
         if (node.isTwoNode()) {
-            if (node.leftKey.compareTo(key) < 0) {
-                node.rightKey = key;
-            } else {
-                node.rightKey = node.leftKey;
-                node.leftKey = key;
-            }
-
+            insertInToTwoNode(node, newNode);
             return null;
         }
 
-        K left = node.leftKey;
-        K middle = key;
-        K right = node.rightKey;
-
-        if (key.compareTo(node.leftKey) < 0) {
-            left = key;
-            middle = node.leftKey;
-        } else if (key.compareTo(node.rightKey) > 0) {
-            middle = node.rightKey;
-            right = key;
-        }
-
-        return new TreeNode<>(middle, left, right);
+        return InsertIntoThreeNode(node, newNode);
     }
 
-    private TreeNode<K> fixNode(TreeNode<K> node, TreeNode<K> toFix) {
-        if (node.isTwoNode()){
-            if (toFix.leftKey.compareTo(node.leftKey) < 0){
-                node.rightKey = node.leftKey;
-                node.leftKey = toFix.leftKey;
-
-                node.leftChild = toFix.leftChild;
-                node.middleChild = toFix.rightChild;
-            } else {
-                node.rightKey = toFix.leftKey;
-
-                node.middleChild = toFix.leftChild;
-                node.rightChild = toFix.rightChild;
-            }
-
-            return null;
+    private TreeNode<K> navigateToLeave(TreeNode<K> node, TreeNode<K> newNode) {
+        if (less(newNode.leftKey, node.leftKey)) {
+            return insert(node.leftChild, newNode);
         }
 
-        K promoteValue;
-        TreeNode<K> left;
-        TreeNode<K> right;
+        if (node.isTwoNode() && greater(newNode.leftKey, node.leftKey)) {
+            return insert(node.rightChild, newNode);
+        }
 
-        if (toFix.leftKey.compareTo(node.leftKey) < 0){
+        if (node.isThreeNode() && greater(newNode.leftKey, node.rightKey)) {
+            return insert(node.rightChild, newNode);
+        }
+
+        return insert(node.middleChild, newNode);
+
+    }
+
+    private void insertInToTwoNode(TreeNode<K> node, TreeNode<K> newNode) {
+        if (less(newNode.leftKey, node.leftKey)) {
+            node.rightKey = node.leftKey;
+            node.leftKey = newNode.leftKey;
+
+            node.leftChild = newNode.leftChild;
+            node.middleChild = newNode.rightChild;
+        } else {
+            node.rightKey = newNode.leftKey;
+
+            node.middleChild = newNode.leftChild;
+            node.rightChild = newNode.rightChild;
+        }
+    }
+
+    private TreeNode<K> InsertIntoThreeNode(TreeNode<K> node, TreeNode<K> newNode) {
+
+        K promoteValue = newNode.leftKey;
+        TreeNode<K> left = new TreeNode<>(node.leftKey, node.leftChild, newNode.leftChild);
+        TreeNode<K> right = new TreeNode<>(node.rightKey, newNode.rightChild, node.rightChild);
+
+        if (less(newNode.leftKey, node.leftKey)) {
             promoteValue = node.leftKey;
-            left = toFix;
-            right= new TreeNode<>(node.rightKey, node.middleChild, node.leftChild);
-        } else if (toFix.leftKey.compareTo(node.rightKey) > 0){
+            left = newNode;
+            right = new TreeNode<>(node.rightKey, node.middleChild, node.leftChild);
+        } else if (greater(newNode.leftKey, node.rightKey)) {
             promoteValue = node.rightKey;
             left = new TreeNode<>(node.leftKey, node.leftChild, node.middleChild);
-            right = toFix;
-        } else {
-            promoteValue = toFix.leftKey;
-            left = new TreeNode<>(node.leftKey, node.leftChild, toFix.leftChild);
-            right = new TreeNode<>(node.rightKey, toFix.rightChild, node.rightChild);
+            right = newNode;
         }
 
         return new TreeNode<>(promoteValue, left, right);
@@ -130,6 +113,14 @@ public class TwoThreeTree<K extends Comparable<K>> {
         }
     }
 
+    private boolean less(K first, K second) {
+        return first.compareTo(second) < 0;
+    }
+
+    private boolean greater(K first, K second) {
+        return first.compareTo(second) > 0;
+    }
+
     public static class TreeNode<K> {
         private K leftKey;
         private K rightKey;
@@ -140,10 +131,6 @@ public class TwoThreeTree<K extends Comparable<K>> {
 
         private TreeNode(K key) {
             this.leftKey = key;
-        }
-
-        public TreeNode(K root, K left, K right) {
-            this(root, new TreeNode<>(left), new TreeNode<>(right));
         }
 
         public TreeNode(K root, TreeNode<K> leftChild, TreeNode<K> rightChild) {
