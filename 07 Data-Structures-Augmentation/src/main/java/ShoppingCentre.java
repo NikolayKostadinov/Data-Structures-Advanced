@@ -99,6 +99,7 @@ public class ShoppingCentre {
                 : products
                 .stream()
                 .flatMap(p -> this.products.get(p).stream())
+                .sorted(Product::compareTo)
                 .map(Product::toString)
                 .collect(Collectors.joining(System.lineSeparator()))) + System.lineSeparator();
     }
