@@ -1,17 +1,14 @@
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class MicrosystemImpl implements Microsystem {
 
-    private final Map<Integer, Computer> computers;
-    private final Map<Brand, TreeSet<Computer>> computersByBrand;
-    private final Map<String, TreeSet<Computer>> computersByColor;
-    private final TreeMap<Double, Set<Computer>> computersByPrice;
+    private Map<Integer, Computer> computers;
+   // private TreeSet<Computer> computersByPrice;
 
     public MicrosystemImpl() {
         this.computers = new HashMap<>();
-        this.computersByBrand = new HashMap<>();
-        this.computersByColor = new HashMap<>();
-        this.computersByPrice = new TreeMap<>(Collections.reverseOrder());
+//        this.computersByPrice = new TreeSet<>();
     }
 
     @Override
@@ -20,29 +17,9 @@ public class MicrosystemImpl implements Microsystem {
             throw new IllegalArgumentException();
         }
         this.computers.put(computer.getNumber(), computer);
-        addToIndices(computer);
+   //     this.computersByPrice.add(computer);
     }
 
-    private void addToIndices(Computer computer) {
-        addToComputersByBrandIndex(computer);
-        addToComputersByColorIndex(computer);
-        addToComputersByPriceIndex(computer);
-    }
-
-    private void addToComputersByPriceIndex(Computer computer) {
-        this.computersByPrice.putIfAbsent(computer.getPrice(), new HashSet<>());
-        this.computersByPrice.get(computer.getPrice()).add(computer);
-    }
-
-    private void addToComputersByColorIndex(Computer computer) {
-        this.computersByColor.putIfAbsent(computer.getColor(), new TreeSet<>());
-        this.computersByColor.get(computer.getColor()).add(computer);
-    }
-
-    private void addToComputersByBrandIndex(Computer computer) {
-        this.computersByBrand.putIfAbsent(computer.getBrand(), new TreeSet<>());
-        this.computersByBrand.get(computer.getBrand()).add(computer);
-    }
 
     @Override
     public boolean contains(int number) {
@@ -65,79 +42,71 @@ public class MicrosystemImpl implements Microsystem {
     public void remove(int number) {
         Computer removedComputer = this.computers.remove(number);
         if (removedComputer == null) throw new IllegalArgumentException();
-        removeFromIndices(removedComputer);
-    }
-
-    private void removeFromIndices(Computer computer) {
-        removeFromComputersByBrandIndex(computer);
-        removeFromComputersByColorIndex(computer);
-        removeFromComputersByPriceIndex(computer);
-    }
-
-    private void removeFromComputersByPriceIndex(Computer computer) {
-        Set<Computer> computers = this.computersByPrice.get(computer.getPrice());
-        if (computers != null) computers.remove(computer);
-    }
-
-    private void removeFromComputersByColorIndex(Computer computer) {
-        TreeSet<Computer> computers = this.computersByColor.get(computer.getColor());
-        if (computers != null) computers.remove(computer);
-    }
-
-    private void removeFromComputersByBrandIndex(Computer computer) {
-        TreeSet<Computer> computers = this.computersByBrand.get(computer.getBrand());
-        if (computers != null) computers.remove(computer);
+       // this.computersByPrice.remove(removedComputer);
     }
 
     @Override
     public void removeWithBrand(Brand brand) {
-        TreeSet<Computer> computers = this.computersByBrand.remove(brand);
-        if (computers == null || computers.isEmpty()) throw new IllegalArgumentException();
-        computers.forEach(computer -> {
-            this.computers.remove(computer.getNumber());
-            removeFromIndices(computer);
-        });
+        int preCount = this.count();
+        this.computers = this.computers
+                .entrySet()
+                .stream()
+                .filter(x -> !x.getValue().getBrand().equals(brand))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+      //  this.computersByPrice.removeIf(x -> x.getBrand().equals(brand));
+
+        if (preCount == this.count()) throw new IllegalArgumentException();
+
     }
 
     @Override
     public void upgradeRam(int ram, int number) {
         Computer computer = this.getComputer(number);
-        if (computer.getRAM() < ram) {
+        if (ram > computer.getRAM()) {
             computer.setRAM(ram);
+            this.computers.put(number, computer);
+          //  this.computersByPrice.add(computer);
         }
     }
 
     @Override
     public Iterable<Computer> getAllFromBrand(Brand brand) {
-        TreeSet<Computer> computers = this.computersByBrand.get(brand);
-        return computers == null ? new ArrayList<>() : computers;
+        return this.computers
+                .values()
+                .stream()
+                .filter(c -> c.getBrand().equals(brand))
+                .sorted(Computer::compareTo)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Iterable<Computer> getAllWithScreenSize(double screenSize) {
-        List<Computer> computers = new ArrayList<>();
-        this.computers.entrySet()
+        return this.computers
+                .values()
                 .stream()
-                .filter(computer -> computer.getValue().getScreenSize() == screenSize)
-                .sorted((c1, c2) -> Integer.compare(c2.getKey(), c1.getKey()))
-                .forEach(computer -> computers.add(computer.getValue()));
-        return computers;
+                .filter(computer -> Double.compare(computer.getScreenSize(), screenSize) == 0)
+                .sorted((c1, c2) -> Integer.compare(c2.getNumber(), c1.getNumber()))
+                .collect(Collectors.toList());
     }
 
     @Override
     public Iterable<Computer> getAllWithColor(String color) {
-        TreeSet<Computer> computers = this.computersByColor.get(color);
-        return computers == null ? new ArrayList<>() : computers;
+        return this.computers
+                .values()
+                .stream()
+                .filter(c -> c.getColor().equals(color))
+                .sorted(Computer::compareTo)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Iterable<Computer> getInRangePrice(double minPrice, double maxPrice) {
-        List<Computer> result = new ArrayList<>();
-
-        this.computersByPrice
-                .subMap(maxPrice, true, minPrice, true)
-                .forEach((key, value) -> result.addAll(value));
-
-        return result;
+        return this.computers
+                .values()
+                .stream()
+                .filter(c -> minPrice <= c.getPrice() && c.getPrice() <= maxPrice)
+                .sorted(Computer::compareTo)
+                .collect(Collectors.toList());
     }
 }

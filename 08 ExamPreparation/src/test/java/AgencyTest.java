@@ -108,4 +108,12 @@ public class AgencyTest {
 
         assertTrue("Incorrect contains behavior", expectedContains);
     }
+
+    @Test
+    public void test(){
+        LocalDate now = LocalDate.now();
+
+        assertEquals(new Invoice("number1","TestCompany",20d, Department.INCOMES, now, now.plusDays(5)),
+                new Invoice("number1","TestCompany",20d, Department.INCOMES, now, now.plusDays(5)));
+    }
 }

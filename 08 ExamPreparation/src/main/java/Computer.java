@@ -1,6 +1,4 @@
-import java.util.Objects;
-
-public class Computer implements Comparable<Computer> {
+public class Computer implements Comparable {
 
     private static final int DEFAULT_RAM_VALUE = 8;
 
@@ -82,8 +80,10 @@ public class Computer implements Comparable<Computer> {
         return getNumber();
     }
 
+
     @Override
-    public int compareTo(Computer o) {
-        return Double.compare(o.getPrice(), this.price);
+    public int compareTo(Object o) {
+        Computer other = (Computer) o;
+        return Double.compare(other.getPrice(), this.getPrice());
     }
 }

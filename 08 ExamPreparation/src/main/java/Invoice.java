@@ -1,4 +1,5 @@
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class Invoice {
 
@@ -64,5 +65,18 @@ public class Invoice {
 
     public void setDueDate(LocalDate dueDate) {
         this.dueDate = dueDate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Invoice)) return false;
+        Invoice invoice = (Invoice) o;
+        return getNumber().equals(invoice.getNumber());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getNumber());
     }
 }
