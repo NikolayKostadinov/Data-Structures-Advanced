@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="exam" />
+        <module name="02 Data Structures Advanced Exam - 19 Sept 2021" />
       </profile>
     </annotationProcessing>
   </component>

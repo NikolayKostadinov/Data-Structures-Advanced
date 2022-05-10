@@ -18,6 +18,14 @@ public class VehicleRepositoryImpl implements VehicleRepository {
     }
 
 
+    public Map<String, Set<Vehicle>> getBySeller() {
+        return bySeller;
+    }
+
+    public Map<String, Set<Vehicle>> getBySellerAndPrice() {
+        return bySellerAndPrice;
+    }
+
     @Override
     public void addVehicleForSale(Vehicle vehicle, String sellerName) {
         this.data.put(vehicle.getId(), vehicle);
@@ -112,7 +120,7 @@ public class VehicleRepositoryImpl implements VehicleRepository {
         return this.bySeller
                 .values()
                 .stream()
-                .flatMap(s->s.stream())
+                .flatMap(Collection::stream)
                 .sorted((v1,v2)->{
                     int horsePwrCompare = v2.getHorsepower() - v1.getHorsepower();
                     if (horsePwrCompare == 0){

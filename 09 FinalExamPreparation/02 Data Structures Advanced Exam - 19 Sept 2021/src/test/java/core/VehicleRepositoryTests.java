@@ -4,15 +4,17 @@ import models.Vehicle;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.junit.Assert.*;
 
 public class VehicleRepositoryTests {
-    private VehicleRepository vehicleRepository;
+    private VehicleRepositoryImpl vehicleRepository;
 
     @Before
     public void setup() {
@@ -65,7 +67,42 @@ public class VehicleRepositoryTests {
     }
 
     @Test
+    public void testRemoveVehicle_WithExistentVehicle_ShouldCorrectlyRemoveVehicles() {
+        Vehicle vehicle = new Vehicle(1 + "", "BMW", "X5", "Sofia", "Blue", 400, 50000, true);
+        Vehicle vehicle2 = new Vehicle(2 + "", "BMW", "X52", "Sofia2", "Blue2", 500, 60000, false);
+        Vehicle vehicle3 = new Vehicle(3 + "", "Audi", "A3", "Sofia3", "Blue3", 300, 70000, false);
+
+        this.vehicleRepository.addVehicleForSale(vehicle3, "George");
+        this.vehicleRepository.addVehicleForSale(vehicle2, "George");
+        this.vehicleRepository.addVehicleForSale(vehicle, "George");
+
+        assertEquals(3, this.vehicleRepository.size());
+        assertEquals(3, toList(this.vehicleRepository.getBySeller().values()).size());
+        assertEquals(3, toList(this.vehicleRepository.getBySellerAndPrice().values()).size());
+
+        this.vehicleRepository.removeVehicle(vehicle2.getId());
+
+        assertEquals(2, this.vehicleRepository.size());
+        assertEquals(2, toList(this.vehicleRepository.getBySeller().values()).size());
+        assertEquals(2, toList(this.vehicleRepository.getBySellerAndPrice().values()).size());
+
+        assertFalse(this.vehicleRepository.contains(vehicle2));
+        assertFalse(toList(this.vehicleRepository.getBySeller().values()).contains(vehicle2));
+        assertFalse(toList(this.vehicleRepository.getBySellerAndPrice().values()).contains(vehicle2));
+
+    }
+
+    private List<Vehicle> toList(Collection<Set<Vehicle>> values) {
+        return values.stream().flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    @Test
     public void testGetAllVehiclesOrderedByHorsepowerDescendingThenByPriceThenBySellerName_WithExistentVehicles_ShouldCorrectlyOrderedVehicles() {
+        List<Vehicle> orderedVehicles = StreamSupport.stream(this.vehicleRepository.getAllVehiclesOrderedByHorsepowerDescendingThenByPriceThenBySellerName().spliterator(), false)
+                .collect(Collectors.toList());
+
+        assertTrue(orderedVehicles.isEmpty());
+
         Vehicle vehicle = new Vehicle(1 + "", "BMW", "X5", "Sofia", "Blue", 400, 50000, true);
         Vehicle vehicle2 = new Vehicle(2 + "", "BMW", "X52", "Sofia2", "Blue2", 500, 61000, false);
         Vehicle vehicle3 = new Vehicle(3 + "", "Audi", "A3", "Sofia3", "Blue3", 300, 70000, false);
@@ -78,7 +115,7 @@ public class VehicleRepositoryTests {
         this.vehicleRepository.addVehicleForSale(vehicle4, "Isacc");
         this.vehicleRepository.addVehicleForSale(vehicle5, "Igor");
 
-        List<Vehicle> orderedVehicles = StreamSupport.stream(this.vehicleRepository.getAllVehiclesOrderedByHorsepowerDescendingThenByPriceThenBySellerName().spliterator(), false)
+        orderedVehicles = StreamSupport.stream(this.vehicleRepository.getAllVehiclesOrderedByHorsepowerDescendingThenByPriceThenBySellerName().spliterator(), false)
                 .collect(Collectors.toList());
 
         assertEquals(5, orderedVehicles.size());
