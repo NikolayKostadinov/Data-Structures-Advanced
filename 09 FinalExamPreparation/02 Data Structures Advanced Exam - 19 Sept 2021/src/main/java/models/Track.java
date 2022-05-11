@@ -2,7 +2,7 @@ package models;
 
 import java.util.Objects;
 
-public class Track{
+public class Track {
     private String id;
 
     private String title;

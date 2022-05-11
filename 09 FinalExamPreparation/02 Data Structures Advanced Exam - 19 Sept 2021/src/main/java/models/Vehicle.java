@@ -1,8 +1,6 @@
 package models;
 
-import java.util.Objects;
-
-public class Vehicle implements Comparable{
+public class Vehicle {
 
     private String id;
 
@@ -93,28 +91,5 @@ public class Vehicle implements Comparable{
 
     public void setIsVIP(boolean VIP) {
         this.isVIP = VIP;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Vehicle)) return false;
-        Vehicle vehicle = (Vehicle) o;
-        return getId().equals(vehicle.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getId());
-    }
-
-    @Override
-    public int compareTo(Object o) {
-        Vehicle other = (Vehicle) o;
-        int priceCompare = Double.compare(this.price, other.getPrice());
-        if (priceCompare == 0){
-            return this.id.compareTo( other.getId());
-        }
-        return priceCompare;
     }
 }

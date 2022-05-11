@@ -6,53 +6,86 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class RePlayerImpl implements RePlayer {
-
-    private final Set<Track> data;
-    private final Map<String, Map<String, Track>> byAlbum;
-
-    private final Deque<Track> queue;
+    private Set<Track> tracks;
+    private Map<String, Map<String, Track>> albums;
+    private Map<String, Map<String, List<Track>>> artistsAlbums;
+    private final ArrayDeque<Track> queue;
 
     public RePlayerImpl() {
-        this.data = new HashSet<>();
-        this.byAlbum = new TreeMap<>();
+        this.tracks = new HashSet<>();
+        this.albums = new TreeMap<>();
         this.queue = new ArrayDeque<>();
+        this.artistsAlbums = new HashMap<>();
     }
 
     @Override
     public void addTrack(Track track, String album) {
-        this.data.add(track);
-        this.byAlbum.putIfAbsent(album, new HashMap<>());
-        this.byAlbum.get(album).put(track.getTitle(), track);
+        this.tracks.add(track);
+
+        this.albums.computeIfAbsent(album, k -> new HashMap<>())
+                .put(track.getTitle(), track);
+
+        this.artistsAlbums
+                .computeIfAbsent(track.getArtist(), k -> new LinkedHashMap<>())
+                .computeIfAbsent(album, k -> new ArrayList<>())
+                .add(track);
+    }
+
+    @Override
+    public void removeTrack(String trackTitle, String albumName) {
+        Map<String, Track> album = this.albums.get(albumName);
+        if (album != null) {
+            Track trackToRemove = album.remove(trackTitle);
+            if (trackToRemove != null) {
+                removeIndices(trackToRemove, albumName);
+                return;
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private void removeIndices(Track trackToRemove, String albumName) {
+        this.tracks.remove(trackToRemove);
+        this.queue.remove(trackToRemove);
+        List<Track> album = this.artistsAlbums.get(trackToRemove.getArtist()).get(albumName);
+
+        if (album.size() == 1){
+            this.artistsAlbums.get(trackToRemove.getArtist()).remove(albumName);
+        } else {
+            album.remove(trackToRemove);
+        }
     }
 
     @Override
     public boolean contains(Track track) {
-        return this.data.contains(track);
+        return this.tracks.contains(track);
     }
 
     @Override
     public int size() {
-        return this.data.size();
+        return this.tracks.size();
     }
 
     @Override
     public Track getTrack(String title, String albumName) {
-        Map<String, Track> album = this.byAlbum.get(albumName);
-        if (album == null) throw new IllegalArgumentException();
-        Track track = album.get(title);
-        if (track == null) throw new IllegalArgumentException();
-        return track;
+        Map<String, Track> album = this.albums.get(albumName);
+        if (album != null) {
+            Track track = album.get(title);
+            if (track != null) return track;
+        }
+        throw new IllegalArgumentException();
     }
 
     @Override
     public Iterable<Track> getAlbum(String albumName) {
-        if (this.byAlbum.isEmpty()) throw new IllegalArgumentException();
-        Map<String, Track> album = this.byAlbum.get(albumName);
-        if (album == null) throw new IllegalArgumentException();
-        return album.values()
-                .stream()
-                .sorted((t1, t2) -> Integer.compare(t2.getPlays(), t1.getPlays()))
-                .collect(Collectors.toList());
+        Map<String, Track> album = this.albums.get(albumName);
+        if (album != null) {
+            return album.values()
+                    .stream()
+                    .sorted(Comparator.comparing(Track::getPlays).reversed())
+                    .collect(Collectors.toList());
+        }
+        throw new IllegalArgumentException();
     }
 
     @Override
@@ -64,74 +97,58 @@ public class RePlayerImpl implements RePlayer {
     @Override
     public Track play() {
         if (this.queue.isEmpty()) throw new IllegalArgumentException();
-        Track track = this.queue.poll();
-        track.incrementPlays();
-        return track;
-    }
-
-    @Override
-    public void removeTrack(String trackTitle, String albumName) {
-        Map<String, Track> album = this.byAlbum.get(albumName);
-        if (album == null) throw new IllegalArgumentException();
-        Track removedTrack = album.remove(trackTitle);
-        if (removedTrack == null) throw new IllegalArgumentException();
-        this.data.remove(removedTrack);
-        this.queue.remove(removedTrack);
+        Track truck = this.queue.poll();
+        if (truck == null) throw new IllegalArgumentException();
+        truck.incrementPlays();
+        return truck;
     }
 
     @Override
     public Iterable<Track> getTracksInDurationRangeOrderedByDurationThenByPlaysDescending(int lowerBound, int upperBound) {
-        if (this.data.isEmpty()) return new ArrayList<>();
-        return this.data
+        return this.tracks
                 .stream()
                 .filter(t -> lowerBound <= t.getDurationInSeconds() && t.getDurationInSeconds() <= upperBound)
                 .sorted((t1, t2) -> {
-                    int compareDurations = Integer.compare(t1.getDurationInSeconds(), t2.getDurationInSeconds());
-                    if (compareDurations == 0) {
+                    int compare = Integer.compare(t1.getDurationInSeconds(), t2.getDurationInSeconds());
+                    if (compare == 0) {
                         return Integer.compare(t2.getPlays(), t1.getPlays());
                     }
-                    return compareDurations;
+                    return compare;
                 })
                 .collect(Collectors.toList());
     }
 
     @Override
     public Iterable<Track> getTracksOrderedByAlbumNameThenByPlaysDescendingThenByDurationDescending() {
-        if (this.byAlbum.isEmpty()) return new ArrayList<>();
-        return this.byAlbum
+        List<Track> result = new ArrayList<>();
+        this.albums
                 .entrySet()
                 .stream()
-                .flatMap(x -> x.getValue()
-                        .values()
-                        .stream()
-                        .sorted((t1, t2) -> {
-                            int comparePlays = Integer.compare(t2.getPlays(), t1.getPlays());
-                            if (comparePlays == 0) {
-                                return Integer.compare(t2.getDurationInSeconds(), t1.getDurationInSeconds());
-                            }
-                            return comparePlays;
-                        })).collect(Collectors.toList());
+                .forEach(a ->
+                {
+                    result.addAll(a.getValue().values()
+                            .stream()
+                            .sorted((t1, t2) -> {
+                                int comparePlays = Integer.compare(t2.getPlays(), t1.getPlays());
+                                if (comparePlays == 0) {
+                                    return Integer.compare(t2.getDurationInSeconds(), t1.getDurationInSeconds());
+                                }
+
+                                return comparePlays;
+                            })
+                            .collect(Collectors.toList()));
+                });
+
+        return result;
+
     }
 
     @Override
     public Map<String, List<Track>> getDiscography(String artistName) {
-        if (this.data.isEmpty()) throw new IllegalArgumentException();
-        Map<String, List<Track>> discography = new HashMap<>();
-        this.byAlbum
-                .entrySet()
-                .stream()
-                .forEach(a -> {
-                    a.getValue()
-                            .values()
-                            .stream()
-                            .forEach(t -> {
-                                if (t.getArtist().equals(artistName)) {
-                                    discography.putIfAbsent(a.getKey(), new ArrayList<>());
-                                    discography.get(a.getKey()).add(t);
-                                }
-                            });
-                });
-        if (discography.isEmpty()) throw new IllegalArgumentException();
-        return discography;
+        if (this.artistsAlbums.isEmpty() || !this.artistsAlbums.containsKey(artistName))
+            throw new IllegalArgumentException();
+        Map<String, List<Track>> artistAlbums = this.artistsAlbums.get(artistName);
+        if (artistAlbums.isEmpty()) throw new IllegalArgumentException();
+        return artistAlbums;
     }
 }

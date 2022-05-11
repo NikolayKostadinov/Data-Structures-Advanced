@@ -4,10 +4,7 @@ import models.Vehicle;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -77,24 +74,21 @@ public class VehicleRepositoryTests {
         this.vehicleRepository.addVehicleForSale(vehicle, "George");
 
         assertEquals(3, this.vehicleRepository.size());
-        assertEquals(3, toList(this.vehicleRepository.getBySeller().values()).size());
-        assertEquals(3, toList(this.vehicleRepository.getBySellerAndPrice().values()).size());
 
         this.vehicleRepository.removeVehicle(vehicle2.getId());
 
         assertEquals(2, this.vehicleRepository.size());
-        assertEquals(2, toList(this.vehicleRepository.getBySeller().values()).size());
-        assertEquals(2, toList(this.vehicleRepository.getBySellerAndPrice().values()).size());
-
         assertFalse(this.vehicleRepository.contains(vehicle2));
-        assertFalse(toList(this.vehicleRepository.getBySeller().values()).contains(vehicle2));
-        assertFalse(toList(this.vehicleRepository.getBySellerAndPrice().values()).contains(vehicle2));
-
     }
 
-    private List<Vehicle> toList(Collection<Set<Vehicle>> values) {
-        return values.stream().flatMap(Collection::stream).collect(Collectors.toList());
+    private List<Vehicle> getVehicles1(Map<String, PriorityQueue<Vehicle>> bySellerAndPrice) {
+        return bySellerAndPrice.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
+
+    private List<Vehicle> getVehicles(Map<String, Set<Vehicle>> bySeller) {
+        return bySeller.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
 
     @Test
     public void testGetAllVehiclesOrderedByHorsepowerDescendingThenByPriceThenBySellerName_WithExistentVehicles_ShouldCorrectlyOrderedVehicles() {
@@ -294,13 +288,14 @@ public class VehicleRepositoryTests {
 
         long start = System.currentTimeMillis();
 
-        this.vehicleRepository.buyCheapestFromSeller("George");
+        Vehicle vehicle = this.vehicleRepository.buyCheapestFromSeller("George");
 
         long stop = System.currentTimeMillis();
 
         long elapsedTime = stop - start;
 
         assertTrue(elapsedTime <= 50);
+        assertEquals("0", vehicle.getId());
     }
 
     @Test
@@ -309,5 +304,36 @@ public class VehicleRepositoryTests {
         bools = bools.stream()
                 .sorted((v1, v2) -> Boolean.compare(v2, v1))
                 .collect(Collectors.toList());
+    }
+
+    @Test
+    public void testBuyCheapest_WithVehicles_ShouldCorrectlyRemoveVehicle() {
+        Vehicle vehicle = new Vehicle(1 + "", "BMW", "X5", "Sofia", "Blue", 400, 90000, true);
+        Vehicle vehicle2 = new Vehicle(2 + "", "Ford", "Escort", "Plovdiv", "Magenta", 500, 150000, false);
+        Vehicle vehicle3 = new Vehicle(3 + "", "Audi", "A3", "Ruse", "Red", 300, 70000, false);
+        Vehicle vehicle4 = new Vehicle(4 + "", "Audi", "A3", "Ruse", "Green", 500, 88000, true);
+        Vehicle vehicle5 = new Vehicle(5 + "", "Audi", "A3", "Varna", "Magenta", 500, 50000, false);
+        Vehicle vehicle6 = new Vehicle(6 + "", "Porsche", "Cayenne", "Plovdiv", "Black", 600, 55000, true);
+
+        this.vehicleRepository.addVehicleForSale(vehicle, "George");
+        this.vehicleRepository.addVehicleForSale(vehicle2, "Jack");
+        this.vehicleRepository.addVehicleForSale(vehicle3, "Jack");
+        this.vehicleRepository.addVehicleForSale(vehicle4, "George");
+        this.vehicleRepository.addVehicleForSale(vehicle5, "George");
+        this.vehicleRepository.addVehicleForSale(vehicle6, "George");
+
+        Vehicle boughtVehicle = this.vehicleRepository.buyCheapestFromSeller("Jack");
+
+        assertEquals(5, this.vehicleRepository.size());
+
+        assertFalse(this.vehicleRepository.contains(vehicle3));
+
+        assertEquals(5, StreamSupport.stream(this.vehicleRepository.getAllVehiclesOrderedByHorsepowerDescendingThenByPriceThenBySellerName().spliterator(), false)
+                .count());
+        assertEquals(1, StreamSupport.stream(this.vehicleRepository.getVehiclesBySeller("Jack").spliterator(), false)
+                .count());
+        assertEquals(0, StreamSupport.stream(this.vehicleRepository.getVehiclesInPriceRange(65000, 70000).spliterator(), false)
+                .count());
+        assertEquals(2, this.vehicleRepository.getAllVehiclesGroupedByBrand().get("Audi").size());
     }
 }
