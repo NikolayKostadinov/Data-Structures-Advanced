@@ -1,5 +1,7 @@
 package models;
 
+import java.util.Objects;
+
 public class Vehicle {
 
     private String id;
@@ -91,5 +93,32 @@ public class Vehicle {
 
     public void setIsVIP(boolean VIP) {
         this.isVIP = VIP;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Vehicle)) return false;
+        Vehicle vehicle = (Vehicle) o;
+        return getId().equals(vehicle.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
+    @Override
+    public String toString() {
+        return "Vehicle{" +
+                "id='" + id + '\'' +
+                ", brand='" + brand + '\'' +
+                ", model='" + model + '\'' +
+                ", location='" + location + '\'' +
+                ", color='" + color + '\'' +
+                ", horsepower=" + horsepower +
+                ", price=" + price +
+                ", isVIP=" + isVIP +
+                '}';
     }
 }
