@@ -7,4 +7,4 @@
 * Хеш таблици и хеширащи алгоритми
 * Колизии и справяне с тях
 * Надграждане и модифициране на структури от данни
- 
+ ![Certificate](https://github.com/NikolayKostadinov/Data-Structures-Advanced/blob/main/Certificate/Data%20Structures%20Advanced%20(with%20Java)%20-%20April%202022%20-%20Certificate.jpeg)
